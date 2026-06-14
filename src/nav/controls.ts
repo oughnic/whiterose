@@ -13,6 +13,12 @@ export class FirstPerson {
     dom: HTMLElement,
   ) {
     this.controls = new PointerLockControls(camera, dom);
+    // Clamp vertical look so a trackpad can't tip the view to the floor/ceiling (#6):
+    // keep pitch within ±60° of the horizon so a level view is always easy to recover.
+    const limit = THREE.MathUtils.degToRad(60);
+    this.controls.minPolarAngle = Math.PI / 2 - limit; // furthest you can look up
+    this.controls.maxPolarAngle = Math.PI / 2 + limit; // furthest you can look down
+
     addEventListener('keydown', (e) => {
       // don't capture keys while typing in an overlay input
       if ((e.target as HTMLElement)?.tagName === 'INPUT') return;
@@ -20,6 +26,11 @@ export class FirstPerson {
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
+  }
+
+  /** Current vertical-look clamp, in radians (for diagnostics). */
+  get pitchLimits(): { min: number; max: number } {
+    return { min: this.controls.minPolarAngle, max: this.controls.maxPolarAngle };
   }
 
   setSpeed(v: number): void {
