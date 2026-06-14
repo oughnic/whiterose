@@ -266,6 +266,7 @@ async function main() {
       look: (x: number, y: number, z: number) => camera.lookAt(new THREE.Vector3(x, y, z)),
       setPos: (x: number, y: number, z: number) => camera.position.set(x, y, z),
       current: () => current.label,
+      lookLimits: () => fp.pitchLimits,
       openMap: () => toggleMap(),
       info: () => ({
         geometries: renderer.info.memory.geometries,
