@@ -22,6 +22,13 @@ export class FirstPerson {
     addEventListener('blur', () => this.keys.clear());
   }
 
+  setSpeed(v: number): void {
+    this.speed = v;
+  }
+  setSensitivity(v: number): void {
+    (this.controls as unknown as { pointerSpeed: number }).pointerSpeed = v;
+  }
+
   get isLocked(): boolean {
     return this.controls.isLocked;
   }
@@ -40,7 +47,8 @@ export class FirstPerson {
 
   update(dt: number, clamp: (p: THREE.Vector3) => void): void {
     if (this.controls.isLocked) {
-      const v = this.speed * dt;
+      const sprint = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight') ? 1.8 : 1;
+      const v = this.speed * sprint * dt;
       let f = 0;
       let r = 0;
       if (this.keys.has('KeyW') || this.keys.has('ArrowUp')) f += 1;

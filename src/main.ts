@@ -6,6 +6,7 @@ import { ProceduralProvider } from './art/ProceduralProvider';
 import { FirstPerson } from './nav/controls';
 import { Hud } from './ui/hud';
 import { MapOverlay } from './nav/map';
+import { Settings } from './ui/settings';
 import type { Interactable } from './nav/interactable';
 import { THEME } from './world/theme';
 
@@ -112,6 +113,17 @@ async function main() {
   const fp = new FirstPerson(camera, renderer.domElement);
   const manager = new AreaManager(graph, images);
   const map = new MapOverlay(app, graph);
+  const settings = new Settings(app);
+  settings.onChange = (v) => {
+    camera.fov = v.fov;
+    camera.updateProjectionMatrix();
+    fp.setSpeed(v.moveSpeed);
+    fp.setSensitivity(v.sensitivity);
+  };
+  settings.onClose = () => {
+    if (!hud.chooserOpen && !map.visible) fp.lock();
+  };
+  settings.apply();
 
   const backStack: string[] = [];
   let current: ConceptNode = graph.defaultStart();
@@ -126,13 +138,33 @@ async function main() {
     map.setCurrent(current.id);
   }
 
+  // travel with a fade transition (instant when reduced-motion is on)
+  let traveling = false;
+  async function travel(id: string, push: boolean) {
+    if (settings.values.reducedMotion) {
+      go(id, push);
+      return;
+    }
+    if (traveling) return;
+    traveling = true;
+    await hud.fadeOut(graph.label(id));
+    go(id, push);
+    await hud.fadeIn();
+    traveling = false;
+  }
+
+  hud.onBack = () => {
+    const prev = backStack.pop();
+    if (prev) travel(prev, false);
+  };
+
   // map / fast-travel: click a concept to travel, then resume
   map.onPick = (id) => {
-    go(id, true);
     map.hide();
+    travel(id, true);
   };
   map.onClose = () => {
-    if (!hud.chooserOpen) fp.lock();
+    if (!hud.chooserOpen && !settings.visible) fp.lock();
   };
   function toggleMap() {
     if (map.visible) {
@@ -143,19 +175,17 @@ async function main() {
       map.show();
     }
   }
-
-  hud.onBack = () => {
-    const prev = backStack.pop();
-    if (prev) {
-      current = manager.enter(prev);
-      hud.setLocation(current.label, `${graph.rootOf(current)} wing`);
-      hud.setBack(backStack.length > 0);
+  function toggleSettings() {
+    if (settings.visible) settings.hide();
+    else {
+      fp.unlock();
+      settings.show();
     }
-  };
+  }
 
   function activate(it: Interactable) {
     if (it.destinations.length === 1) {
-      go(it.destinations[0].id, true);
+      travel(it.destinations[0].id, true);
     } else if (it.destinations.length > 1) {
       fp.unlock();
       const kindLabel =
@@ -165,10 +195,9 @@ async function main() {
         it.destinations,
         (d) => {
           hud.hideChooser();
-          go(d.id, true);
-          hud.setLocation(current.label, `${graph.rootOf(current)} wing`);
           suppressClickActivate = true; // the lock-gesture click shouldn't re-trigger
           fp.lock();
+          travel(d.id, true);
         },
         () => {
           hud.hideChooser();
@@ -207,13 +236,16 @@ async function main() {
   });
   addEventListener('keydown', (e) => {
     if (e.code === 'KeyE' && fp.isLocked && targeted) activate(targeted);
-    if (e.code === 'KeyM' && !hud.chooserOpen) toggleMap();
+    if (e.code === 'KeyM' && !hud.chooserOpen && !settings.visible) toggleMap();
+    if (e.code === 'KeyO' && !hud.chooserOpen && !map.visible) toggleSettings();
     if (e.code === 'Escape') {
       if (hud.chooserOpen) {
         hud.hideChooser();
         fp.lock();
       } else if (map.visible) {
         map.hide();
+      } else if (settings.visible) {
+        settings.hide();
       }
     }
   });

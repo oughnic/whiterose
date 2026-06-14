@@ -11,6 +11,7 @@ export class Hud {
   private crosshair: HTMLDivElement;
   private start: HTMLDivElement;
   private chooser: HTMLDivElement;
+  private fade: HTMLDivElement;
 
   onBack: (() => void) | null = null;
 
@@ -96,7 +97,7 @@ export class Hud {
       textShadow: '0 1px 2px #000',
     });
     help.innerHTML =
-      'WASD / arrows — move &nbsp;·&nbsp; mouse — look &nbsp;·&nbsp; <b>M — map</b><br>E or click — use door / stairs / lift &nbsp;·&nbsp; Esc — release';
+      'WASD — move &nbsp;·&nbsp; Shift — run &nbsp;·&nbsp; mouse — look &nbsp;·&nbsp; <b>M — map</b> &nbsp;·&nbsp; <b>O — settings</b><br>E or click — use door / stairs / lift &nbsp;·&nbsp; Esc — release';
     this.root.appendChild(help);
 
     this.start = el('div', {
@@ -123,6 +124,33 @@ export class Hud {
       background: 'rgba(0,20,40,0.6)',
     });
     this.root.appendChild(this.chooser);
+
+    this.fade = el('div', {
+      position: 'absolute',
+      inset: '0',
+      background: '#06203a',
+      opacity: '0',
+      transition: 'opacity 0.18s ease',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
+      font: 'bold 22px Arial',
+      pointerEvents: 'none',
+    });
+    this.root.appendChild(this.fade);
+  }
+
+  /** Fade to a solid field showing the destination name. Resolves once opaque. */
+  fadeOut(name: string): Promise<void> {
+    this.fade.textContent = name;
+    this.fade.style.opacity = '1';
+    return new Promise((r) => setTimeout(r, 190));
+  }
+  /** Fade back to the scene. */
+  fadeIn(): Promise<void> {
+    this.fade.style.opacity = '0';
+    return new Promise((r) => setTimeout(r, 210));
   }
 
   setLocation(label: string, subtitle?: string): void {
