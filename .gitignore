@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Vite / TS caches
+.vite/
+*.tsbuildinfo
+
+# Editor / OS
+.claude/settings.local.json
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Raw MauroDataMapper exports (the source-of-truth input lives outside git;
+# only the derived public/concept-graph.json is published). See data/README.md.
+data/*.json
+!data/sample-*.json
